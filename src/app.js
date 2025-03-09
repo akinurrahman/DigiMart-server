@@ -1,19 +1,26 @@
-import express from 'express'
-import cors from 'cors'
-import cookieParser from 'cookie-parser'
+import express from "express";
+import cors from "cors";
+import cookieParser from "cookie-parser";
 
-import { envConfig } from './config/env.config.js';
+import { envConfig } from "./config/env.config.js";
+import { errorHandler } from "./middlewares/error.middleware.js";
 
-const app = express()
+import userRouter from "./routes/user.routes.js";
 
-app.use(cors({
-    origin : envConfig.cors_origin,
-    credientials : true,
-}))
+const app = express();
 
-app.use(express.json())
-app.use(cookieParser())
+app.use(
+  cors({
+    origin: envConfig.cors_origin,
+    credientials: true,
+  })
+);
 
-app.get("/", (req,res)=> res.send("Hello World!"))
+app.use(express.json());
+app.use(cookieParser());
 
+
+app.use("/api/v1/auth", userRouter);
+
+app.use(errorHandler);
 export default app;

@@ -1,13 +1,14 @@
 import { model, Schema } from "mongoose";
-import bcrypt from "bcrypt";
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { envConfig } from "../config/env.config.js";
 
 const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
-    profile: {
-      type: Schema.Types.ObjectId,
-      ref: "Product",
+    refreshToken: {
+      type: String,
     },
   },
   { timestamps: true }
@@ -15,14 +16,31 @@ const userSchema = new Schema(
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next();
-
-  try {
-    const salt = await bcrypt.genSalt(10);
-    this.password = await bcrypt.hash(this.password, salt);
-    next();
-  } catch (error) {
-    next(error);
-  }
+  this.password = await bcrypt.hash(this.password, 10);
+  next();
 });
+
+userSchema.methods.isPasswordCorrect =async function (password){
+    return await bcrypt.compare(password, this.password)
+}
+
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign({ _id: this._id }, envConfig.accesstoken_secret, {
+    expiresIn: envConfig.accesstoken_expiry,
+  });
+};
+
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id,
+      email: this.email,
+    },
+    envConfig.refreshtoken_secret,
+    {
+      expiresIn: envConfig.refreshtoken_expiry,
+    }
+  );
+};
 
 export const User = model("User", userSchema);

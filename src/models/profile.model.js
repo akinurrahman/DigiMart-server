@@ -2,8 +2,11 @@ import { model, Schema, Types } from "mongoose";
 
 const profileSchema = new Schema(
   {
-    name: { type: String, required: true },
-    email: { type: String, required: true, unique: true },
+    userId: {
+      type: Schema.Types.ObjectId,
+      ref: "User",
+    },
+    fullName: { type: String, required: true },
     cart: [
       {
         productId: {
