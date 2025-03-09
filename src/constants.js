@@ -13,4 +13,5 @@ export const ERROR_CODES = {
   INVALID_TOKEN: "ERR_INVALID_TOKEN",
 };
 
-export const refreshTokenExpiryInMS =  1000 * 60 * 60 * 24 * 5
+export const refreshTokenExpiryInMS =  1000 * 60 * 60 * 24 * 5;
+export const accessTokenExpiryInMS = 1000 * 60 * 15;

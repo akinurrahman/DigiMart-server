@@ -1,5 +1,9 @@
 import { envConfig } from "../config/env.config.js";
-import { ERROR_CODES, refreshTokenExpiryInMS } from "../constants.js";
+import {
+  accessTokenExpiryInMS,
+  ERROR_CODES,
+  refreshTokenExpiryInMS,
+} from "../constants.js";
 import { Profile } from "../models/profile.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError, ApiResponse, asyncHandler } from "../utils/index.js";
@@ -8,7 +12,6 @@ const cookieOptions = {
   httpOnly: true,
   secure: envConfig.node_env === "production",
   sameSite: envConfig.node_env === "production" ? "None" : "Lax",
-  maxAge: refreshTokenExpiryInMS,
 };
 
 export const registerApi = asyncHandler(async (req, res) => {
@@ -39,7 +42,14 @@ export const registerApi = asyncHandler(async (req, res) => {
 
   res
     .status(201)
-    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: refreshTokenExpiryInMS,
+    })
+    .cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: accessTokenExpiryInMS,
+    })
     .json(
       new ApiResponse(201, {
         message: "user created successfully",
@@ -73,7 +83,14 @@ export const loginApi = asyncHandler(async (req, res) => {
   user.refreshToken = refreshToken;
   await user.save();
   res
-    .cookie("refreshToken", refreshToken, cookieOptions)
+    .cookie("refreshToken", refreshToken, {
+      ...cookieOptions,
+      maxAge: refreshTokenExpiryInMS,
+    })
+    .cookie("accessToken", accessToken, {
+      ...cookieOptions,
+      maxAge: accessTokenExpiryInMS,
+    })
     .status(200)
     .json(
       new ApiResponse(200, {
@@ -83,4 +100,14 @@ export const loginApi = asyncHandler(async (req, res) => {
         accessToken,
       })
     );
+});
+
+export const logOutApi = asyncHandler(async (req, res) => {
+  await User.findByIdAndUpdate(req.user._id, { refreshToken: undefined });
+
+  res
+    .status(200)
+    .clearCookie("refreshToken")
+    .clearCookie("accessToken")
+    .json(new ApiResponse(200, {}, "User logged out successfully"));
 });
