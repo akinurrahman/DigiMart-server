@@ -57,12 +57,32 @@ export const getAllCategories = asyncHandler(async (req, res) => {
   const categories = await Category.find();
 
   if (!categories.length) {
-    return res
-      .status(200)
-      .json(new ApiResponse(200, [], "Don't have any categories"));
+    throw new ApiError(404, 'No categories found!', ERROR_CODES.NOT_FOUND)
   }
 
   res
     .status(200)
     .json(new ApiResponse(200, categories, "Categories Fetched successfully!"));
 });
+
+export const getSubCategories = asyncHandler(async(req,res)=>{
+  const categoryId = req.params.categoryId;
+
+  if(!categoryId){
+    throw new ApiError(400, 'Category Id missing', ERROR_CODES.BAD_REQUEST)
+  }
+
+  const subCategories = await SubCategory.find({categoryId})
+
+  if(!subCategories.length){
+    throw new ApiError(404, 'No Subcategories found', ERROR_CODES.NOT_FOUND)
+  }
+
+  res
+    .status(200)
+    .json(
+      new ApiResponse(200, subCategories, "Subcategories fetched successfully!")
+    );
+
+
+})
