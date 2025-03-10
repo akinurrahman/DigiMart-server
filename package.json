@@ -6,7 +6,8 @@
   "type": "module",
   "scripts": {
     "start": "node src/index.js",
-    "dev": "nodemon src/index.js"
+    "dev": "nodemon src/index.js",
+    "seedAdmin": "node -r dotenv/config src/scripts/seedAdmin.js"
   },
   "keywords": [],
   "author": "Akinur Rahman",

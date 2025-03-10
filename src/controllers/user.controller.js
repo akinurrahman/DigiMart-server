@@ -51,14 +51,18 @@ export const registerApi = asyncHandler(async (req, res) => {
       maxAge: accessTokenExpiryInMS,
     })
     .json(
-      new ApiResponse(201, {
-        message: "user created successfully",
-        user: {
-          fullName,
-          email,
+      new ApiResponse(
+        201,
+        {
+          user: {
+            fullName,
+            email,
+            role: "user",
+          },
+          accessToken,
         },
-        accessToken,
-      })
+        "User created successfully"
+      )
     );
 });
 
@@ -93,12 +97,17 @@ export const loginApi = asyncHandler(async (req, res) => {
     })
     .status(200)
     .json(
-      new ApiResponse(200, {
-        user: {
-          email,
+      new ApiResponse(
+        200,
+        {
+          user: {
+            email,
+            role: user.role,
+          },
+          accessToken,
         },
-        accessToken,
-      })
+        "Login Successfull!"
+      )
     );
 });
 

@@ -7,6 +7,11 @@ const userSchema = new Schema(
   {
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
+    role: {
+      type: String,
+      enum: ["user", "admin"],
+      default: "user",
+    },
     refreshToken: {
       type: String,
     },
@@ -20,9 +25,9 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-userSchema.methods.isPasswordCorrect =async function (password){
-    return await bcrypt.compare(password, this.password)
-}
+userSchema.methods.isPasswordCorrect = async function (password) {
+  return await bcrypt.compare(password, this.password);
+};
 
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign({ _id: this._id }, envConfig.accesstoken_secret, {
