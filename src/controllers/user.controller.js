@@ -7,6 +7,8 @@ import {
 import { Profile } from "../models/profile.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError, ApiResponse, asyncHandler } from "../utils/index.js";
+import jwt from "jsonwebtoken";
+import bcrypt from "bcryptjs";
 
 const cookieOptions = {
   httpOnly: true,
@@ -119,4 +121,69 @@ export const logOutApi = asyncHandler(async (req, res) => {
     .clearCookie("refreshToken")
     .clearCookie("accessToken")
     .json(new ApiResponse(200, {}, "User logged out successfully"));
+});
+
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incommingRefreshToken =
+    req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incommingRefreshToken) {
+    throw new ApiError(401, "Unauthorized request", ERROR_CODES.UNAUTHORIZED);
+  }
+
+  try {
+    const decodedToken = jwt.verify(
+      incommingRefreshToken,
+      envConfig.refreshtoken_secret
+    );
+
+    const user = await User.findById(decodedToken?._id);
+
+    if (!user) {
+      throw new ApiError(
+        401,
+        "Invalid refresh token",
+        ERROR_CODES.INVALID_TOKEN
+      );
+    }
+
+    const match = await bcrypt.compare(
+      incommingRefreshToken,
+      user.refreshToken
+    );
+    if (!match) {
+      throw new ApiError(
+        401,
+        "Refresh token expired or used",
+        ERROR_CODES.TOKEN_EXPIRED
+      );
+    }
+
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save();
+
+    res
+      .status(200)
+      .cookie("accessToken", accessToken, {
+        ...cookieOptions,
+        maxAge: accessTokenExpiryInMS,
+      })
+      .cookie("refreshToken", refreshToken, {
+        ...cookieOptions,
+        maxAge: refreshTokenExpiryInMS,
+      })
+      .json(new ApiResponse(200,accessToken, "access token refreshed"))
+  } catch (error) {
+    if (error.name === "TokenExpiredError") {
+      throw new ApiError(
+        401,
+        "Refresh token expired. Please log in again.",
+        ERROR_CODES.TOKEN_EXPIRED
+      );
+    }
+    throw new ApiError(401, error?.message || "Invalid refresh token");
+  }
 });
