@@ -1,8 +1,9 @@
 import { Router } from "express";
-import { verfiyAdmin, verifyJWT } from "../middlewares/auth.middleware.js";
+import {  verfiyAdmin, verifyJWT } from "../middlewares/auth.middleware.js";
 import {
   addCategory,
   addSubCategory,
+  deleteCategory,
   deleteSubCategory,
   getAllCategories,
   getSubCategories,
@@ -10,14 +11,21 @@ import {
 
 const router = Router();
 
-router.route("/category").post(verifyJWT, verfiyAdmin, addCategory);
+// Category routes
+router
+  .route("/category")
+  .post(verifyJWT, verfiyAdmin, addCategory) // Add Category
+  .get(getAllCategories); // Get All Categories
+
 router
   .route("/category/:categoryId")
-  .post(verifyJWT, verfiyAdmin, addSubCategory);
+  .post(verifyJWT, verfiyAdmin, addSubCategory) // Add Subcategory
+  .get(getSubCategories) // Get Subcategories
+  .delete(verifyJWT, verfiyAdmin, deleteCategory); // Delete Category
+
+// Subcategory routes
 router
-  .route("/category/:subCategoryId")
+  .route("/subcategory/:subCategoryId")
   .delete(verifyJWT, verfiyAdmin, deleteSubCategory);
-router.route("/category").get(getAllCategories);
-router.route("/category/:categoryId").get(getSubCategories);
 
 export default router;
