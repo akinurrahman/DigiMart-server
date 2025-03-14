@@ -7,7 +7,7 @@ dotenv.config({
 export const envConfig = {
   port: process.env.PORT || 8000,
   node_env: process.env.NODE_ENV || "production",
-  cors_origin: process.env.CORS_ORIGIN,
+  cors_origin: process.env.CORS_ORIGIN || "http://localhost:3000",
   mongodb_uri: process.env.MONGODB_URI,
 
   accesstoken_secret: process.env.ACCESS_TOKEN_SECRET,

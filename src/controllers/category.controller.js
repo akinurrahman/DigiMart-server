@@ -57,7 +57,7 @@ export const getAllCategories = asyncHandler(async (req, res) => {
   const categories = await Category.find();
 
   if (!categories.length) {
-    throw new ApiError(404, 'No categories found!', ERROR_CODES.NOT_FOUND)
+    throw new ApiError(404, "No categories found!", ERROR_CODES.NOT_FOUND);
   }
 
   res
@@ -65,17 +65,21 @@ export const getAllCategories = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, categories, "Categories Fetched successfully!"));
 });
 
-export const getSubCategories = asyncHandler(async(req,res)=>{
+export const getSubCategories = asyncHandler(async (req, res) => {
   const categoryId = req.params.categoryId;
 
-  if(!categoryId){
-    throw new ApiError(400, 'Category Id missing', ERROR_CODES.BAD_REQUEST)
+  if (!categoryId) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, [], "No Subcategories found"));
   }
 
-  const subCategories = await SubCategory.find({categoryId})
+  const subCategories = await SubCategory.find({ categoryId });
 
-  if(!subCategories.length){
-    throw new ApiError(404, 'No Subcategories found', ERROR_CODES.NOT_FOUND)
+  if (!subCategories.length) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, [], "No Subcategories found"));
   }
 
   res
@@ -83,6 +87,24 @@ export const getSubCategories = asyncHandler(async(req,res)=>{
     .json(
       new ApiResponse(200, subCategories, "Subcategories fetched successfully!")
     );
+});
 
+export const deleteSubCategory = asyncHandler(async (req, res) => {
+  const subCategoryId = req.params.subCategoryId;
 
-})
+  if (!subCategoryId) {
+    throw new ApiError(
+      400,
+      "Please provide subcategory id",
+      ERROR_CODES.BAD_REQUEST
+    );
+  }
+
+  const subcategory = await SubCategory.findByIdAndDelete(subCategoryId);
+
+  if(!subcategory){
+    throw new ApiError(404, 'No subcategory found', ERROR_CODES.NOT_FOUND)
+  }
+  
+  res.status(200).json(new ApiResponse(200, subcategory, "Item deleted successfully"))
+});

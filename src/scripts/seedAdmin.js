@@ -17,8 +17,8 @@ async function seedAdmin() {
   }
 
   await User.create({
-    email: "",
-    password: "",
+    email: "admin@digimart.com",
+    password: "Hello@1234",
     role: "admin",
   });
 
