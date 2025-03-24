@@ -1,6 +1,6 @@
-import app from "./app.js";
-import { connectDb } from "./config/db.js";
 import { envConfig } from "./config/env.config.js";
+import { connectDb } from "./config/db.js";
+import app from "./app.js";
 
 connectDb()
   .then(() => {
@@ -8,6 +8,6 @@ connectDb()
       console.log(`server is running at port : ${envConfig.port}`);
     });
   })
-  .catch((err) => {
+  .catch((err: unknown) => {
     console.log(`Mongodb connection failed: `, err);
   });

@@ -1,6 +1,12 @@
 import { ApiError } from "../utils/index.js";
+import { Request, Response, NextFunction } from "express";
 
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (
+  err: Error | ApiError,
+  req: Request,
+  res: Response,
+  next: NextFunction
+) => {
   // If the error is an instance of ApiError, use its statusCode and message
   if (err instanceof ApiError) {
     return res.status(err.statusCode).json({

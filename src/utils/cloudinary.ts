@@ -1,5 +1,5 @@
 import fs from "fs";
-import { v2 as cloudinary } from "cloudinary";
+import { v2 as cloudinary, UploadApiResponse } from "cloudinary";
 import { envConfig } from "../config/env.config.js";
 
 cloudinary.config({
@@ -8,16 +8,21 @@ cloudinary.config({
   api_secret: envConfig.cloudinary_api_secret,
 });
 
-export const uploadToCloudinary = async (localFilePath) => {
+export const uploadToCloudinary = async (
+  localFilePath: string
+): Promise<UploadApiResponse | null> => {
   try {
     if (!localFilePath) return null;
+
     const response = await cloudinary.uploader.upload(localFilePath, {
+      folder: "digimart",
       resource_type: "auto",
     });
-    fs.unlinkSync(localFilePath); //Delete local file after upload
+
+    fs.unlinkSync(localFilePath); 
     return response;
   } catch (error) {
-    fs.unlinkSync(localFilePath); // removed failed upload file
+    fs.unlinkSync(localFilePath); 
     return null;
   }
 };

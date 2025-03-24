@@ -1,12 +1,22 @@
-import { model, Schema } from "mongoose";
+import { model, Schema, Document } from "mongoose";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { envConfig } from "../config/env.config.js";
 
-const userSchema = new Schema(
+export interface IUser extends Document {
+  email: string;
+  password: string;
+  role: "user" | "admin";
+  refreshToken: string;
+  isPasswordCorrect(password: string): Promise<boolean>;
+  generateAccessToken(): string;
+  generateRefreshToken(): string;
+}
+
+const userSchema = new Schema<IUser>(
   {
     email: { type: String, required: true, unique: true },
-    password: { type: String, required: true },
+    password: { type: String, required: true, select: false },
     role: {
       type: String,
       enum: ["user", "admin"],
@@ -14,6 +24,7 @@ const userSchema = new Schema(
     },
     refreshToken: {
       type: String,
+      select: false,
     },
   },
   { timestamps: true }
@@ -29,14 +40,14 @@ userSchema.pre("save", async function (next) {
   next();
 });
 
-
-userSchema.methods.isPasswordCorrect = async function (password) {
+userSchema.methods.isPasswordCorrect = async function (password: string) {
+  if (!this.password) return false;
   return await bcrypt.compare(password, this.password);
 };
 
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign({ _id: this._id }, envConfig.accesstoken_secret, {
-    expiresIn: envConfig.accesstoken_expiry,
+    expiresIn: "15m",
   });
 };
 
@@ -48,9 +59,9 @@ userSchema.methods.generateRefreshToken = function () {
     },
     envConfig.refreshtoken_secret,
     {
-      expiresIn: envConfig.refreshtoken_expiry,
+      expiresIn: "3d",
     }
   );
 };
 
-export const User = model("User", userSchema);
+export const User = model<IUser>("User", userSchema);

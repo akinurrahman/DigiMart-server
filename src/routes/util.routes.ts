@@ -5,5 +5,5 @@ import { uploadFiles } from "../controllers/util.controllers.js";
 
 const router = Router();
 
-router.route("/files").post(verifyJWT, upload.array("files", 5), uploadFiles);
+router.route("/files").post(verifyJWT, upload.array("files", 8), uploadFiles);
 export default router;

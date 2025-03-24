@@ -7,13 +7,15 @@ import {
 import { Profile } from "../models/profile.model.js";
 import { User } from "../models/user.model.js";
 import { ApiError, ApiResponse, asyncHandler } from "../utils/index.js";
-import jwt from "jsonwebtoken";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import { CookieOptions } from "express";
+import { BAD_REQUEST, CREATED, OK, UNAUTHORIZED } from "../constants/http.js";
 
-const cookieOptions = {
+const cookieOptions: CookieOptions = {
   httpOnly: true,
   secure: envConfig.node_env === "production",
-  sameSite: envConfig.node_env === "production" ? "None" : "Lax",
+  sameSite: envConfig.node_env === "production" ? "none" : "lax",
 };
 
 export const registerApi = asyncHandler(async (req, res) => {
@@ -21,16 +23,15 @@ export const registerApi = asyncHandler(async (req, res) => {
 
   if (!(fullName && email && password)) {
     throw new ApiError(
-      400,
+      BAD_REQUEST,
       "Please provide all the information",
-      ERROR_CODES.BAD_REQUEST
     );
   }
 
   const existingUser = await User.findOne({ email });
 
   if (existingUser) {
-    throw new ApiError(400, "User Already Exists", ERROR_CODES.BAD_REQUEST);
+    throw new ApiError(BAD_REQUEST, "User Already Exists");
   }
 
   const newUser = await User.create({ email, password });
@@ -43,7 +44,7 @@ export const registerApi = asyncHandler(async (req, res) => {
   await newUser.save();
 
   res
-    .status(201)
+    .status(CREATED)
     .cookie("refreshToken", refreshToken, {
       ...cookieOptions,
       maxAge: refreshTokenExpiryInMS,
@@ -54,7 +55,7 @@ export const registerApi = asyncHandler(async (req, res) => {
     })
     .json(
       new ApiResponse(
-        201,
+        CREATED,
         {
           user: {
             fullName,
@@ -72,15 +73,19 @@ export const loginApi = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!(email && password))
-    throw new ApiError(401, "Invalid Credentials", ERROR_CODES.UNAUTHORIZED);
+    throw new ApiError(UNAUTHORIZED, "Invalid Credentials", ERROR_CODES.UNAUTHORIZED);
 
-  const user = await User.findOne({ email });
+  const user = await User.findOne({ email }).select("+password");
   if (!user)
-    throw new ApiError(401, "Invalid Credentials", ERROR_CODES.UNAUTHORIZED);
+    throw new ApiError(UNAUTHORIZED, "Invalid Credentials", ERROR_CODES.UNAUTHORIZED);
 
   const isPasswordCorrect = await user.isPasswordCorrect(password);
   if (!isPasswordCorrect) {
-    throw new ApiError(401, "Invalid Credentials", ERROR_CODES.UNAUTHORIZED);
+    throw new ApiError(
+      UNAUTHORIZED,
+      "Invalid Credentials",
+      ERROR_CODES.UNAUTHORIZED
+    );
   }
 
   const accessToken = user.generateAccessToken();
@@ -97,10 +102,10 @@ export const loginApi = asyncHandler(async (req, res) => {
       ...cookieOptions,
       maxAge: accessTokenExpiryInMS,
     })
-    .status(200)
+    .status(OK)
     .json(
       new ApiResponse(
-        200,
+        OK,
         {
           user: {
             email,
@@ -114,13 +119,13 @@ export const loginApi = asyncHandler(async (req, res) => {
 });
 
 export const logOutApi = asyncHandler(async (req, res) => {
-  await User.findByIdAndUpdate(req.user._id, { refreshToken: undefined });
+  await User.findByIdAndUpdate(req.user._id, { refreshToken: undefined }).select("+refreshToken");
 
   res
-    .status(200)
+    .status(OK)
     .clearCookie("refreshToken")
     .clearCookie("accessToken")
-    .json(new ApiResponse(200, {}, "User logged out successfully"));
+    .json(new ApiResponse(OK, {}, "User logged out successfully"));
 });
 
 export const refreshAccessToken = asyncHandler(async (req, res) => {
@@ -128,20 +133,20 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     req.cookies.refreshToken || req.body.refreshToken;
 
   if (!incommingRefreshToken) {
-    throw new ApiError(401, "Unauthorized request", ERROR_CODES.UNAUTHORIZED);
+    throw new ApiError(UNAUTHORIZED, "Unauthorized request", ERROR_CODES.UNAUTHORIZED);
   }
 
   try {
     const decodedToken = jwt.verify(
       incommingRefreshToken,
       envConfig.refreshtoken_secret
-    );
+    ) as JwtPayload & { _id: string };
 
-    const user = await User.findById(decodedToken?._id);
+    const user = await User.findById(decodedToken._id).select("+refreshToken");
 
     if (!user) {
       throw new ApiError(
-        401,
+        UNAUTHORIZED,
         "Invalid refresh token",
         ERROR_CODES.INVALID_TOKEN
       );
@@ -153,7 +158,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     );
     if (!match) {
       throw new ApiError(
-        401,
+        UNAUTHORIZED,
         "Refresh token expired or used",
         ERROR_CODES.TOKEN_EXPIRED
       );
@@ -166,7 +171,7 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
     await user.save();
 
     res
-      .status(200)
+      .status(OK)
       .cookie("accessToken", accessToken, {
         ...cookieOptions,
         maxAge: accessTokenExpiryInMS,
@@ -175,15 +180,15 @@ export const refreshAccessToken = asyncHandler(async (req, res) => {
         ...cookieOptions,
         maxAge: refreshTokenExpiryInMS,
       })
-      .json(new ApiResponse(200,accessToken, "access token refreshed"))
-  } catch (error) {
-    if (error.name === "TokenExpiredError") {
+      .json(new ApiResponse(OK, accessToken, "access token refreshed"));
+  } catch (error: any) {
+    if (error instanceof Error && error.name === "TokenExpiredError") {
       throw new ApiError(
-        401,
+        UNAUTHORIZED,
         "Refresh token expired. Please log in again.",
         ERROR_CODES.TOKEN_EXPIRED
       );
     }
-    throw new ApiError(401, error?.message || "Invalid refresh token");
+    throw new ApiError(UNAUTHORIZED, error?.message || "Invalid refresh token");
   }
 });
