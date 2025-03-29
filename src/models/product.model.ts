@@ -38,7 +38,7 @@ const productSchema = new Schema<IProduct>(
     },
     sub_category: {
       type: Schema.Types.ObjectId,
-      ref: "Category",
+      ref: "SubCategory",
     },
     originalPrice: {
       type: Number,

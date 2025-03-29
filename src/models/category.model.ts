@@ -5,7 +5,7 @@ export interface ICategory extends Document {
 }
 export interface ISubCategory extends Document {
   categoryId: Schema.Types.ObjectId;
-  subCategory: string;
+  sub_category: string;
 }
 
 const categorySchema = new Schema<ICategory>(
@@ -18,7 +18,7 @@ const categorySchema = new Schema<ICategory>(
 const subCategorySchema = new Schema<ISubCategory>(
   {
     categoryId: { type: Schema.Types.ObjectId, ref: "Category" },
-    subCategory: { type: String, required: true },
+    sub_category: { type: String, default: undefined },
   },
   { timestamps: true }
 );

@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+const objectIdRegex = /^[0-9a-fA-F]{24}$/; // MongoDB ObjectId format
+
 export const productSchema = z.object({
   product_name: z
     .string()
@@ -15,7 +17,10 @@ export const productSchema = z.object({
 
   category: z.string().trim().min(1, "Category is required"),
 
-  sub_category: z.string().trim().optional(),
+  sub_category: z.preprocess(
+    (val) => (typeof val === "string" && val.trim() === "" ? undefined : val),
+    z.string().regex(objectIdRegex, "Invalid sub_category ID").optional()
+  ),
 
   originalPrice: z
     .number()
@@ -48,7 +53,7 @@ export const productSchema = z.object({
 
   status: z.enum(["draft", "active"]),
 
-  notes: z.string().optional(),
+  notes: z.string().optional().nullable(),
 });
 
 export type ProductType = z.infer<typeof productSchema>;

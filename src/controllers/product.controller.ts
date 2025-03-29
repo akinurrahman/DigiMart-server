@@ -28,3 +28,21 @@ export const addProduct = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(201, newProduct, "Product created successfully"));
 });
+
+
+export const fetchProducts = asyncHandler(async (req, res) => {
+  const data = await Product.find()
+    .populate("category", "name")
+    .populate("sub_category", "subCategory")
+    .sort({ createdAt: -1 }); 
+
+  if (data.length === 0) {
+    return res
+      .status(200)
+      .json(new ApiResponse(200, [], "No products available")); 
+  }
+
+  res
+    .status(200)
+    .json(new ApiResponse(200, data, "Products fetched successfully!"));
+});
